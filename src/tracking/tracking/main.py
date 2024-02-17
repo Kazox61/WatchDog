@@ -125,12 +125,8 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
 
     sync_hits = diff_trophies < 0 and diff_attack_wins > 0
     if sync_hits:
-        if diff_trophies > 0:
-            bulk_changes.append(UpdateOne({'tag': tag},
-                                          {'$push': {f'battle_log.{current_date}.attacks': diff_trophies}}))
-        else:
-            bulk_changes.append(UpdateOne({'tag': tag},
-                                          {'$push': {f'battle_log.{current_date}.defenses': diff_trophies}}))
+        bulk_changes.append(UpdateOne({'tag': tag},
+                                      {'$push': {f'battle_log.{current_date}.defenses': diff_trophies}}))
 
     if diff_trophies != 0:
         bulk_changes.append(UpdateOne({'tag': tag},
@@ -176,8 +172,8 @@ async def main(keys: deque, clients: list):
                                       for count, response in enumerate(responses) if isinstance(response, bytes)]
                     await asyncio.gather(*response_tasks)
 
-                    if bulk_changes != []:
-                        results = await player_collection.bulk_write(bulk_changes)
+            if bulk_changes != []:
+                results = await player_collection.bulk_write(bulk_changes)
 
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ class Config:
         "watchdog.cogs.discord_events",
         "watchdog.cogs.general",
         "watchdog.cogs.liveticker",
+        "watchdog.cogs.notifications",
         "watchdog.cogs.player",
         "watchdog.cogs.leaderboard",
         "watchdog.cogs.group",

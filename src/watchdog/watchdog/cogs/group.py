@@ -254,6 +254,50 @@ class Group(commands.Cog):
                           if result.modified_count > 0 else
                           f"Failed to remove `{player_tag}` from `{selected_group['name']}`.")
 
+    @group_add.command(name="notifications", description="Choose the group from which you want to get notifications in your DM.")
+    @discord.commands.option("group", description="Choose your group", autocomplete=search_group_user)
+    async def group_add_notifications(self,
+                                      ctx: discord.ApplicationContext,
+                                      group: str):
+        await ctx.defer()
+        await self.bot.try_create_user(ctx.user.id)
+
+        selected_group = await parse_group_user(group, ctx.user.id)
+        if selected_group is None:
+            await ctx.respond(f"Failed to add notifications.")
+            return
+
+        result = await self.bot.group_db.update_one(
+            {"_id": ObjectId(selected_group["id"])},
+            {"$addToSet": {'notifications': ctx.user.id}})
+
+        await ctx.respond(
+            f"You succussfully added notifications for `{selected_group['name']}`."
+            if result.modified_count > 0 else
+            f"Failed to add notifications for `{selected_group['name']}`.")
+
+    @group_remove.command(name="notifications", description="Choose the group from which you don't want to get notifications in your DM.")
+    @discord.commands.option("group", description="Choose your group", autocomplete=search_group_user)
+    async def group_remove_notifications(self,
+                                         ctx: discord.ApplicationContext,
+                                         group: str):
+        await ctx.defer()
+        await self.bot.try_create_user(ctx.user.id)
+
+        selected_group = await parse_group_user(group, ctx.user.id)
+        if selected_group is None:
+            await ctx.respond(f"Failed to remove notifications.")
+            return
+
+        result = await self.bot.group_db.update_one(
+            {"_id": ObjectId(selected_group["id"])},
+            {"$pull": {'notifications': ctx.user.id}})
+
+        await ctx.respond(
+            f"You succussfully removed notifications for `{selected_group['name']}`."
+            if result.modified_count > 0 else
+            f"Failed to remove notifications for `{selected_group['name']}`.")
+
     @group_add.command(name="leaderboard", description="Add players from the leaderboard to your group.")
     @discord.commands.option("group", description="Choose your group", autocomplete=search_group_user)
     @discord.commands.option("location", description="Choose the location", autocomplete=search_location)

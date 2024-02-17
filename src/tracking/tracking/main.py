@@ -75,7 +75,7 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
 
     tag = obj.tag
 
-    await cache.set(tag, compressed_new_response, ex=2_592_000)
+    await cache.set(tag, compressed_new_response, ex=300)
 
     if previous_compressed_response is None:
         return None
@@ -155,6 +155,7 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
 
 async def main(keys: deque, clients: list):
     player_collection = mongo_client.WatchDog.players
+    await cache.flushdb()
 
     loop_throttler = Throttler(rate_limit=1, period=30)
     while True:

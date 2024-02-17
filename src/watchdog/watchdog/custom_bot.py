@@ -24,7 +24,7 @@ class CustomBot(commands.Bot, ABC):
                          intents=discord.Intents.default(),
                          help_command=None,
                          activity=discord.Game('/info'),
-                         # debug_guilds=[1121860500972642324]
+                         debug_guilds=[1121860500972642324]
                          )
         self.start_time = pendulum.now(pendulum.UTC)
 

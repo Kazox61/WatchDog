@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "tracking"
+version = "0.1.0"
+description = ""
+authors = ["Kazox6 <pawelka00florian@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+shared = { path = "../shared/", develop = true }
+aiohttp = "^3.9.3"
+fastapi = "^0.109.2"
+motor = "^3.3.2"
+msgspec = "^0.18.6"
+ujson = "^5.9.0"
+uvicorn = "^0.27.1"
+websockets = "^12.0"
+asyncio-throttle = "^1.0.2"
+redis = "^5.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

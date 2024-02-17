@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "scheduler"
+version = "0.1.0"
+description = ""
+authors = ["Kazox6 <pawelka00florian@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+shared = { path = "../shared/", develop = true }
+apscheduler = "^3.10.4"
+coc-py = "^3.2.1"
+motor = "^3.3.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

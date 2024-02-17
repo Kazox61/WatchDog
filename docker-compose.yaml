@@ -1,0 +1,14 @@
+version: "3.9"
+   
+services:
+  discord:
+    build: 
+      dockerfile: discord.Dockerfile
+  
+  tracking:
+    build:
+      dockerfile: tracking.Dockerfile
+  
+  scheduler:
+    build:
+      dockerfile: scheduler.Dockerfile

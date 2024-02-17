@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "watchdog"
+version = "0.1.0"
+description = ""
+authors = ["Kazox6 <pawelka00florian@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+shared = { path = "src/shared/", develop = true }
+discord = { path = "src/discord/", develop = true }
+scheduler = { path = "src/scheduler/", develop = true }
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

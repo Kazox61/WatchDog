@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "discord"
+version = "0.1.0"
+description = ""
+authors = ["Kazox6 <pawelka00florian@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+shared = { path = "../shared/", develop = true }
+py-cord = "^2.4.1"
+websockets = "^12.0"
+pymitter = "^0.5.0"
+motor = "^3.3.2"
+coc-py = "^3.2.1"
+redis = "^5.0.1"
+pendulum = "^3.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -31,7 +31,7 @@ class DiscordEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
         msg = "Thanks for inviting LegendWatchDog to your server. This bot is all about the Legend League. " \
-              "I suggest you to look into the `help` command to see and learn more about all existing commands."
+              "I suggest you to look into the `info` and `commands` commands learn more about all existing commands."
 
         channel = self.bot.get_channel(self.bot.config.server_join_channel_id)
         await channel.send(f"Just joined `{guild.name}`, {guild.member_count} members")
@@ -47,13 +47,12 @@ class DiscordEvents(commands.Cog):
         embed = discord.Embed(description=msg, color=discord.Color.blue())
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
         view = discord.ui.View()
-        view.add_item(discord.ui.Button(
-            label="Support Server",
-            emoji="🔗",
-            url="https://discord.gg/TZeXsbbQ9y",
-            style=discord.ButtonStyle.url))
-        embed.set_footer(
-            text="Admin permissions are recommended for full functionality.")
+        view.add_item(discord.ui.Button(label="invite me",
+                      url="https://discord.com/api/oauth2/authorize?client_id=846142858368516158&permissions=8&scope=bot", style=discord.ButtonStyle.url))
+        view.add_item(discord.ui.Button(label="support server",
+                      url="https://discord.gg/bpQj8aEMxP", style=discord.ButtonStyle.url))
+        view.add_item(discord.ui.Button(label="code",
+                      url="https://github.com/Kazox61/WatchDog", style=discord.ButtonStyle.url))
         await firstChannel.send(view=view, embed=embed)
 
     @commands.Cog.listener()

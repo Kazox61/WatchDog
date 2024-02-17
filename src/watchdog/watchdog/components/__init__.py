@@ -1,4 +1,4 @@
 from .paginator import *
-from .help import *
+from .commands import *
 from .player import *
 from .player_list import *

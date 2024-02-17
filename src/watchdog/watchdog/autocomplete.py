@@ -29,7 +29,7 @@ async def search_player(ctx: discord.AutocompleteContext):
         search_input = ctx.value
         if search_input.startswith("#"):
             search_input = coc.utils.correct_tag(search_input)
-    cursor = db_client.watchdog.players.find(
+    cursor = db_client.WatchDog.players.find(
         {"$or": [{"name": {"$regex": search_input, "$options": "i"}},
                  {"tag": {"$regex": "^" + search_input, "$options": "i"}}]},
         {"name": 1, "tag": 1, "_id": 0}
@@ -53,7 +53,7 @@ async def search_group(ctx: discord.AutocompleteContext):
     search_input = ""
     if ctx.value is not None:
         search_input = ctx.value
-    cursor = db_client.watchdog.groups.find({"name": {"$regex": "^" + search_input, "$options": "i"}},
+    cursor = db_client.WatchDog.groups.find({"name": {"$regex": "^" + search_input, "$options": "i"}},
                                             {"name": 1, "owner_name": 1, "_id": 0}
                                             ).limit(25).sort("search_count", -1)
     result = await cursor.to_list(25)
@@ -64,7 +64,7 @@ async def search_group(ctx: discord.AutocompleteContext):
 
 
 async def parse_group(search: str) -> str:
-    group = await db_client.watchdog.groups.find_one({"name": search})
+    group = await db_client.WatchDog.groups.find_one({"name": search})
     if group:
         group["id"] = str(group["_id"])
     return group
@@ -74,7 +74,7 @@ async def search_group_user(ctx: discord.AutocompleteContext):
     search_input = ""
     if ctx.value is not None:
         search_input = ctx.value
-    cursor = db_client.watchdog.groups.find(
+    cursor = db_client.WatchDog.groups.find(
         {"$and": [
             {"name": {"$regex": "^" + search_input, "$options": "i"}},
             {"members": ctx.interaction.user.id}
@@ -89,7 +89,7 @@ async def search_group_user(ctx: discord.AutocompleteContext):
 
 
 async def parse_group_user(search: str, discord_id: int):
-    group = await db_client.watchdog.groups.find_one({"name": search})
+    group = await db_client.WatchDog.groups.find_one({"name": search})
     if group is None:
         return None
     if discord_id not in group["members"]:

@@ -28,7 +28,7 @@ logger.debug("Scheduler started successfully.")
 
 async def get_leaderboards() -> tuple[list, list]:
     tasks = []
-    tracked_locations = await db_client.watchdog.leaderboards.distinct("location")
+    tracked_locations = await db_client.WatchDog.leaderboards.distinct("location")
     try:
         all_locations = await coc_client.search_locations()
     except coc.Maintenance:
@@ -52,7 +52,7 @@ async def get_leaderboards() -> tuple[list, list]:
 async def new_day_start():
     start_time = time.time()
     date = get_current_insertion_date()
-    await db_client.watchdog.players.update_many({}, [{
+    await db_client.WatchDog.players.update_many({}, [{
         "$addFields": {
             "battle_log": {
                 date: {
@@ -70,7 +70,7 @@ async def new_day_start():
 @scheduler.scheduled_job("cron", hour=5, minute=0)
 async def store_all_leaderboards():
     start_time = time.time()
-    await db_client.watchdog.leaderboards.update_many(
+    await db_client.WatchDog.leaderboards.update_many(
         {}, {'$set': {'leaderboard': []}})
     locations, leaderboards = await get_leaderboards()
     for index, leaderboard in enumerate(leaderboards):
@@ -79,7 +79,7 @@ async def store_all_leaderboards():
         for player in leaderboard:
             documents.append({'tag': player.tag, 'name': player.name,
                              'trophies': player.trophies, 'rank': player.rank})
-        await db_client.watchdog.leaderboards.update_one(
+        await db_client.WatchDog.leaderboards.update_one(
             {'location': location}, {'$set': {'leaderboard': documents}})
     logger.debug(
         f"All leaderboards stored in {time.time() - start_time} seconds.")

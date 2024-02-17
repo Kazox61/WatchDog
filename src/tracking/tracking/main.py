@@ -52,8 +52,8 @@ async def get_player_responses(keys: deque, tags: list[str]) -> list[bytes]:
                 async with session.get(url, headers=headers) as new_response:
                     if new_response.status == 404:  # remove banned players
                         t = url.split("%23")[-1]
-                        await mongo_client.watchdog.players.delete_one({"tag": t})
-                        await mongo_client.watchdog.groups.update_many({}, {"$pull": {"players": t}})
+                        await mongo_client.WatchDog.players.delete_one({"tag": t})
+                        await mongo_client.WatchDog.groups.update_many({}, {"$pull": {"players": t}})
                         return None
                     elif new_response.status != 200:
                         return None
@@ -154,7 +154,7 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
 
 
 async def main(keys: deque, clients: list):
-    player_collection = mongo_client.watchdog.players
+    player_collection = mongo_client.WatchDog.players
 
     loop_throttler = Throttler(rate_limit=1, period=30)
     while True:

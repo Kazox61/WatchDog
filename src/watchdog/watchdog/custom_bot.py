@@ -32,10 +32,10 @@ class CustomBot(commands.Bot, ABC):
 
         self.db_client = motor.motor_asyncio.AsyncIOMotorClient(
             self.config.mongodb)
-        self.player_db = self.db_client.watchdog.players
-        self.user_db = self.db_client.watchdog.users
-        self.leaderboard_db = self.db_client.watchdog.leaderboards
-        self.group_db = self.db_client.watchdog.groups
+        self.player_db = self.db_client.WatchDog.players
+        self.user_db = self.db_client.WatchDog.users
+        self.leaderboard_db = self.db_client.WatchDog.leaderboards
+        self.group_db = self.db_client.WatchDog.groups
 
         self.coc_client = coc.Client(key_names="WatchDog", key_count=10)
         asyncio.get_event_loop().run_until_complete(self.coc_client.login(

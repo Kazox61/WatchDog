@@ -1,6 +1,7 @@
 import discord
 
 from shared.coc_utils import get_current_insertion_date, SUPER_SCRIPTS
+
 from watchdog.components import PaginatorResponse, PaginatorInteraction
 
 
@@ -34,7 +35,6 @@ class PlayerTableEmbed(discord.Embed):
 def create_embeds(title: str, players: list[dict]):
     elements_per_page = 40
     embeds = []
-    players = []
     players_split = [players[i:i + elements_per_page]
                      for i in range(0, len(players), elements_per_page)]
     for i, player_split in enumerate(players_split):

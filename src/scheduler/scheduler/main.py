@@ -71,18 +71,28 @@ async def new_day_start():
 async def store_all_leaderboards():
     start_time = time.time()
     await db_client.WatchDog.leaderboards.update_many(
-        {}, {'$set': {'leaderboard': []}})
-    locations, leaderboards = await get_leaderboards()
-    for index, leaderboard in enumerate(leaderboards):
-        location = locations[index]
-        documents = []
-        for player in leaderboard:
-            documents.append({'tag': player.tag, 'name': player.name,
-                             'trophies': player.trophies, 'rank': player.rank})
-        await db_client.WatchDog.leaderboards.update_one(
-            {'location': location}, {'$set': {'leaderboard': documents}})
+        {}, {'$set': {'day-start': []}})
+
+    tasks = []
+    for id in await db_client.WatchDog.leaderboards.distinct("location_id"):
+        tasks.append(insert_new_leaderboard(id))
+    await asyncio.gather(*tasks)
     logger.debug(
         f"All leaderboards stored in {time.time() - start_time} seconds.")
+
+
+async def insert_new_leaderboard(location_id):
+    if location_id == "global":
+        players = await coc_client.get_location_players(location_id=location_id)
+    else:
+        players = await coc_client.get_location_players(location_id=location_id)
+
+    documents = []
+    for player in players:
+        documents.append({'tag': player.tag, 'name': player.name,
+                          'trophies': player.trophies, 'rank': player.rank})
+    await db_client.WatchDog.leaderboards.update_one(
+        {'location_id': location_id}, {'$set': {'day-start': documents}})
 
 
 if __name__ == '__main__':

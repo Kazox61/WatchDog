@@ -7,7 +7,7 @@ from bson.objectid import ObjectId
 from shared.coc_utils import get_current_insertion_date
 
 from watchdog.custom_bot import CustomBot
-from watchdog.components import PlayerTablePaginatorResponse, PlayerOverviewEmbed, PaginatorResponse
+from watchdog.components import PlayerTablePaginatorResponse, PlayerOverviewEmbed, PaginatorResponse, PlayerTableEmbed
 from watchdog.autocomplete import search_group_user, parse_group_user, search_group, parse_group, search_player, parse_player, search_location, locations
 
 
@@ -297,6 +297,30 @@ class Group(commands.Cog):
             f"You succussfully removed notifications for `{selected_group['name']}`."
             if result.modified_count > 0 else
             f"Failed to remove notifications for `{selected_group['name']}`.")
+
+    @group_add.command(name="autoupdate", description="Add Autoupdate for your group.")
+    @discord.commands.option("group", description="Choose your group", autocomplete=search_group_user)
+    async def group_add_autoupdate(self,
+                                   ctx: discord.ApplicationContext,
+                                   group: str,
+                                   channel: discord.TextChannel):
+        await ctx.defer()
+        await self.bot.try_create_user(ctx.user.id)
+
+        selected_group = await parse_group_user(group, ctx.user.id)
+        if selected_group is None:
+            await ctx.respond("Failed to add Autoupdate for the Group.")
+            return
+
+        message = await channel.send("Loading...")
+
+        result = await self.bot.group_db.update_one({"_id": ObjectId(selected_group["id"]), "autoupdate": {"$not": {"$elemMatch": {"channel_id":  channel.id}}}},
+                                                    {"$addToSet": {"autoupdate": {"channel_id": channel.id, "message_id": message.id}}})
+
+        await ctx.respond(
+            f"Successfully added Autoupdate for `{selected_group['name']}` to {channel.mention}."
+            if result.modified_count > 0 else
+            f"Failed to add Autoupdate for `{selected_group['name']}` to `{channel.mention}`")
 
     @group_add.command(name="leaderboard", description="Add players from the leaderboard to your group.")
     @discord.commands.option("group", description="Choose your group", autocomplete=search_group_user)

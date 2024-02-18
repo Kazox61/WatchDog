@@ -24,6 +24,7 @@ class Config:
         "watchdog.cogs.general",
         "watchdog.cogs.liveticker",
         "watchdog.cogs.notifications",
+        "watchdog.cogs.autoupdate",
         "watchdog.cogs.player",
         "watchdog.cogs.leaderboard",
         "watchdog.cogs.group",

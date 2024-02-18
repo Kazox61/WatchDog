@@ -2,7 +2,7 @@ import coc
 import discord
 from pathlib import Path
 import motor.motor_asyncio
-
+import csv
 from shared.config import Config
 
 
@@ -13,10 +13,9 @@ db_client = motor.motor_asyncio.AsyncIOMotorClient(config.mongodb)
 locations = {'global': 'global'}
 path = Path().joinpath("assets", "locations.csv")
 with open(path, 'r', encoding='utf-8') as f:
-    for line in f.readlines():
-        line = line.replace('"', '')
-        loc, location_id = line.split(',')
-        locations[loc] = location_id
+    spamreader = csv.reader(f)
+    for row in spamreader:
+        locations[row[0]] = row[1]
 
 
 async def search_location(ctx: discord.AutocompleteContext):

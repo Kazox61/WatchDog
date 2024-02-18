@@ -5,18 +5,22 @@ from datetime import datetime
 
 from watchdog.custom_bot import CustomBot
 from watchdog.cogs.group import sort_by_current_trophies
-from watchdog.components import PlayerTableEmbed
+from watchdog.components import PlayerTableEmbed, PlayerSimpleEmbed, PlayerOverviewEmbed
+from watchdog.background import player_event_emitter
 
 
 class AutoUpdate(commands.Cog):
     def __init__(self, bot: CustomBot) -> None:
         self.bot = bot
-        self.update_loop.start()
 
-    @tasks.loop(minutes=1)
-    async def update_loop(self):
-        await self.update_groups()
-        await self.update_leaderboard_current()
+        self.bot.scheduler.add_job(self.update_groups, "interval", minutes=5)
+        self.bot.scheduler.add_job(
+            self.update_leaderboard_current, "interval", minutes=5)
+        self.bot.scheduler.add_job(
+            self.update_leaderboard_daystart, "cron", hour=5, minute=5)
+
+        player_event_emitter.on(
+            "diffTrophies", self.update_player)
 
     async def update_groups(self):
         update_tasks = []
@@ -89,6 +93,60 @@ class AutoUpdate(commands.Cog):
 
                 update_tasks.append(
                     update_leaderboard_message(autoupdate, embed))
+
+        await asyncio.gather(*update_tasks)
+
+    async def update_leaderboard_daystart(self):
+        update_tasks = []
+        async for leaderboard in self.bot.leaderboard_db.find({"autoupdate.leaderboard_daystart": {"$exists": True}}):
+            location_name = leaderboard["name"]
+
+            players: list[dict] = []
+            for player in leaderboard['day-start']:
+                players.append(player)
+            players.sort(key=lambda x: x['rank'])
+
+            embed = PlayerSimpleEmbed(
+                f"Autoupdate Leaderboard daystart {location_name}",
+                players[:50], 1)
+            embed.description += f'Last updated: <t:{str(datetime.now().timestamp()).split(".")[0]}:R>'
+
+            for autoupdate in leaderboard["autoupdate"]["leaderboard_daystart"]:
+                async def update_leaderboard_message(autoupdate: dict, embed: discord.Embed):
+                    channel_id = autoupdate["channel_id"]
+                    message_id = autoupdate["message_id"]
+                    try:
+                        await self.bot.http.edit_message(
+                            str(channel_id), str(message_id), content="", embeds=[embed.to_dict()])
+                    except:
+                        pass
+
+                update_tasks.append(
+                    update_leaderboard_message(autoupdate, embed))
+
+        await asyncio.gather(*update_tasks)
+
+    async def update_player(self, event):
+        player_tag = event["tag"]
+        player = await self.bot.player_db.find_one({"tag": player_tag, "autoupdate": {"$exists": True}})
+        if player is None:
+            return
+
+        embed = PlayerOverviewEmbed(player)
+
+        update_tasks = []
+        for autoupdate in player["autoupdate"]:
+            async def update_player_message(autoupdate: dict, embed: discord.Embed):
+                channel_id = autoupdate["channel_id"]
+                message_id = autoupdate["message_id"]
+                try:
+                    await self.bot.http.edit_message(
+                        str(channel_id), str(message_id), content="", embeds=[embed.to_dict()])
+                except:
+                    pass
+
+            update_tasks.append(
+                update_player_message(autoupdate, embed))
 
         await asyncio.gather(*update_tasks)
 

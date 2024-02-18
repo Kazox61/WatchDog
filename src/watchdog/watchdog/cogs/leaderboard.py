@@ -1,8 +1,9 @@
 import discord
 from discord.ext import commands
+from datetime import datetime
 
 from watchdog.custom_bot import CustomBot
-from watchdog.components import PlayerSimplePaginator, PlayerOverviewEmbed, PlayerTablePaginatorResponse, PaginatorResponse, PlayerTableEmbed
+from watchdog.components import PlayerSimplePaginator, PlayerOverviewEmbed, PlayerTablePaginatorResponse, PaginatorResponse, PlayerSimpleEmbed
 from watchdog.autocomplete import search_location, locations
 
 
@@ -11,15 +12,17 @@ class Leaderboard(commands.Cog):
         "leaderboard", "All Leaderboard commands")
     leaderboard_current = leaderboard.create_subgroup(
         name="current", description="All Leaderboard Current commands")
+    leaderboard_daystart = leaderboard.create_subgroup(
+        name="daystart", description="All Leaderboard Daystart commands")
 
     def __init__(self, bot: CustomBot):
         self.bot = bot
 
-    @leaderboard.command(name="day-start", description="Get the ranking from a day-start leaderboard.")
+    @leaderboard_daystart.command(name="check", description="Get the ranking from a daystart leaderboard.")
     @discord.commands.option("location", description="Choose a location", autocomplete=search_location)
-    async def leaderboard_day_start(self,
-                                    ctx: discord.ApplicationContext,
-                                    location: str):
+    async def leaderboard_daystart_check(self,
+                                         ctx: discord.ApplicationContext,
+                                         location: str):
         await ctx.defer()
         await self.bot.try_create_user(ctx.user.id)
 
@@ -28,17 +31,61 @@ class Leaderboard(commands.Cog):
             return
 
         result = await self.bot.leaderboard_db.find_one({'name': location})
-        if result is None:
-            await ctx.respond("Location is not tracked yet, use `leaderboard add`.")
-            return
+
         players: list[dict] = []
         for player in result['day-start']:
             players.append(player)
         players.sort(key=lambda x: x['rank'])
 
         paginator = PlayerSimplePaginator(
-            f'Leaderboard day-start {location}', players)
+            f'Leaderboard daystart {location}', players)
         await paginator.send(ctx)
+
+    @leaderboard_daystart.command(name="autoupdate", description="Add Autoupdate for daystart Leaderboard.")
+    @discord.commands.option("location", description="Choose a location", autocomplete=search_location)
+    async def leaderboard_daystart_autoupdate(self,
+                                              ctx: discord.ApplicationContext,
+                                              location: str,
+                                              channel: discord.TextChannel):
+        await ctx.defer()
+        await self.bot.try_create_user(ctx.user.id)
+
+        if location not in locations.keys():
+            await ctx.respond("Country not found.")
+            return
+
+        location_id = locations[location]
+        location_name = location
+
+        try:
+            result = await self.bot.leaderboard_db.find_one({'name': location})
+
+            players: list[dict] = []
+            for player in result['day-start']:
+                players.append(player)
+            players.sort(key=lambda x: x['rank'])
+
+            embed = PlayerSimpleEmbed(
+                f"Autoupdate Leaderboard daystart {location_name}",
+                players[:50], 1)
+            embed.description += f'Last updated: <t:{str(datetime.now().timestamp()).split(".")[0]}:R>'
+
+            message = await channel.send(embed=embed)
+
+        except:
+            await ctx.respond(f"Failed to add Autoupdate for `{location_name}` in {channel.mention}.")
+
+        document = {
+            "discord_user_id": ctx.user.id,
+            "channel_id": channel.id,
+            "message_id": message.id
+        }
+
+        result = await self.bot.leaderboard_db.update_one({"location_id": location_id}, {
+            "$addToSet": {f"autoupdate.leaderboard_daystart": document}})
+        await ctx.respond(f"Successfully added Autoupdate for `{location_name}` in {channel.mention}."
+                          if result.modified_count > 0 else
+                          f"Failed to add Autoupdate for `{location_name}` in {channel.mention}.")
 
     @leaderboard_current.command(name="check", description="Get a overview of the players from a current leaderboard ranking.")
     @discord.commands.option("location", description="Choose a location", autocomplete=search_location)

@@ -1,4 +1,6 @@
 import traceback
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from pytz import utc
 
 from shared.config import Config
 
@@ -8,9 +10,11 @@ from watchdog.background import player_websocket
 
 if __name__ == "__main__":
     config = Config()
+    scheduler = AsyncIOScheduler(timezone=utc)
+    scheduler.start()
 
     try:
-        bot = CustomBot(config)
+        bot = CustomBot(config, scheduler)
         for extension in config.extensions:
             try:
                 bot.load_extension(extension)

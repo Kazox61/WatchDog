@@ -9,6 +9,7 @@ import pendulum
 import traceback
 import ssl
 import ujson
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from shared.config import Config
 from shared.coc_utils import get_current_insertion_date
@@ -18,7 +19,7 @@ from watchdog.emojis import Emojis
 
 
 class CustomBot(commands.Bot, ABC):
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, scheduler: AsyncIOScheduler):
         super().__init__(command_prefix=",",
                          case_insensitive=True,
                          intents=discord.Intents.default(),
@@ -29,6 +30,7 @@ class CustomBot(commands.Bot, ABC):
         self.start_time = pendulum.now(pendulum.UTC)
 
         self.config = config
+        self.scheduler = scheduler
 
         self.db_client = motor.motor_asyncio.AsyncIOMotorClient(
             self.config.mongodb)

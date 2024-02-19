@@ -66,7 +66,7 @@ async def get_player_responses(keys: deque, tags: list[str]) -> list[bytes]:
     return results
 
 
-async def update_player(new_response: bytes, previous_compressed_response: bytes, bulk_changes: list, clients: list):
+async def update_player(new_response: bytes, previous_compressed_response: bytes, bulk_changes: list, ws_tasks: list, clients: list):
     obj = decode(new_response, type=Player)
     compressed_new_response = zlib.compress(new_response)
 
@@ -143,10 +143,8 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
     changes = {"type": "diffTrophies",
                "tag": tag,
                "diffTrophies": diff_trophies}
-    ws_tasks = []
     for ws in clients:
-        ws_tasks.append(asyncio.ensure_future(
-            send_ws(ws=ws, json=changes)))
+        ws_tasks.append(send_ws(ws=ws, json=changes))
 
 
 async def main(keys: deque, clients: list):
@@ -162,18 +160,22 @@ async def main(keys: deque, clients: list):
                           for i in range(0, len(tags), max_tag_split)]
 
             bulk_changes = []
+            ws_tasks = []
 
             key_throttler = Throttler(rate_limit=1, period=1)
             for tag_group in split_tags:
                 async with key_throttler:
                     responses = await get_player_responses(keys=keys, tags=tag_group)
                     cache_results = await cache.mget(keys=tag_group)
-                    response_tasks = [update_player(new_response=response, previous_compressed_response=cache_results[count], bulk_changes=bulk_changes, clients=clients)
+                    response_tasks = [update_player(new_response=response, previous_compressed_response=cache_results[count], bulk_changes=bulk_changes, ws_tasks=ws_tasks, clients=clients)
                                       for count, response in enumerate(responses) if isinstance(response, bytes)]
                     await asyncio.gather(*response_tasks)
 
             if bulk_changes != []:
                 results = await player_collection.bulk_write(bulk_changes)
+
+            if ws_tasks != []:
+                await asyncio.gather(*ws_tasks)
 
 
 if __name__ == "__main__":

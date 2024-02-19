@@ -54,6 +54,7 @@ class Group(commands.Cog):
     group = discord.SlashCommandGroup("group", "All Group commands")
     group_add = group.create_subgroup("add", "All Group Add commands")
     group_remove = group.create_subgroup("remove", "All Group Add commands")
+    group_copy = group.create_subgroup("copy", "All Group Copy commands")
 
     def __init__(self, bot: CustomBot):
         self.bot = bot
@@ -322,15 +323,15 @@ class Group(commands.Cog):
             if result.modified_count > 0 else
             f"Failed to add Autoupdate for `{selected_group['name']}` to `{channel.mention}`")
 
-    @group_add.command(name="leaderboard", description="Add players from the leaderboard to your group.")
+    @group_copy.command(name="leaderboard", description="Copy players from the leaderboard to your group.")
     @discord.commands.option("group", description="Choose your group", autocomplete=search_group_user)
     @discord.commands.option("location", description="Choose the location", autocomplete=search_location)
-    @discord.commands.option("limit", description="Choose the limit")
-    async def group_add_leaderboard(self,
-                                    ctx: discord.ApplicationContext,
-                                    group: str,
-                                    location: str,
-                                    limit: int):
+    @discord.commands.option("limit", description="Choose the limit", default=200, min_value=1, max_value=200)
+    async def group_copy_leaderboard(self,
+                                     ctx: discord.ApplicationContext,
+                                     group: str,
+                                     location: str,
+                                     limit: int):
         await ctx.defer()
         await self.bot.try_create_user(ctx.user.id)
 
@@ -352,7 +353,39 @@ class Group(commands.Cog):
         for success in responses:
             if success:
                 i += 1
-        await ctx.respond(f"Added `{str(i)}/{str(limit)}` Players from Leaderboard `{location}` to `{selected_group['name']}`.")
+        await ctx.respond(f"Copied `{str(i)}/{str(limit)}` Players from Leaderboard `{location}` to `{selected_group['name']}`.")
+
+    @group_copy.command(name="group", description="Copy players from a public group to your group.")
+    @discord.commands.option("source", description="Choose a public group", autocomplete=search_group)
+    @discord.commands.option("destination", description="Choose your group", autocomplete=search_group_user)
+    async def group_copy_group(self,
+                               ctx: discord.ApplicationContext,
+                               source: str,
+                               destination: str):
+        await ctx.defer()
+        await self.bot.try_create_user(ctx.user.id)
+
+        source = await parse_group(source)
+        if source is None:
+            await ctx.respond("Failed to add Group Players to the Group.")
+            return
+
+        destination = await parse_group_user(destination, ctx.user.id)
+        if destination is None:
+            await ctx.respond("Failed to add Group Players to the Group.")
+            return
+
+        player_tasks = []
+        i = 0
+        for player_tag in source["players"]:
+            task = asyncio.ensure_future(
+                self.try_add_player_to_group(destination["id"], player_tag))
+            player_tasks.append(task)
+        responses = await asyncio.gather(*player_tasks, return_exceptions=True)
+        for success in responses:
+            if success:
+                i += 1
+        await ctx.respond(f"Copied `{str(i)}/{len(source['players'])}` Players from Group `{source['name']}` to `{destination['name']}`.")
 
     @group.command(name="leave", description="Choose the group which you'd like to leave.")
     @discord.commands.option("group", description="Choose your group", autocomplete=search_group_user)

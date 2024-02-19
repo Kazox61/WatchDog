@@ -115,6 +115,11 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
 
     gained_trophies = diff_trophies > 0
     if gained_trophies:
+        if diff_attack_wins == 2 and diff_trophies > 64:
+            other_trophies = diff_trophies - 40
+            bulk_changes.append(UpdateOne({'tag': tag},
+                                          {'$push': {f'battle_log.{current_date}.attacks': other_trophies}}))
+            diff_trophies = 40
         bulk_changes.append(UpdateOne({'tag': tag},
                                       {'$push': {f'battle_log.{current_date}.attacks': diff_trophies}}))
 

@@ -37,7 +37,7 @@ class Liveticker(commands.Cog):
                     player_channels[channel] = [player_tag]
         return player_channels, player_data
 
-    async def wait_for_reaction(self, msg, player_embeds, overview_embed):
+    async def wait_for_reaction(self, msg: discord.Message, player_embeds: list[discord.Embed], overview_embed: discord.Embed):
         home_emoji = self.bot.emoji.home
 
         def check(reaction: discord.Reaction, user: discord.User):
@@ -57,8 +57,11 @@ class Liveticker(commands.Cog):
                     await msg.edit(embed=player_embeds[index])
                 await msg.remove_reaction(reaction.emoji, user)
             except asyncio.TimeoutError:
-                await msg.clear_reactions()
-                return
+                try:
+                    await msg.clear_reactions()
+                    return
+                except:
+                    return
             except discord.errors.Forbidden:
                 return
 

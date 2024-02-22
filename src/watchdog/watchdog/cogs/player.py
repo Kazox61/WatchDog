@@ -47,10 +47,10 @@ class Player(commands.Cog):
 
     @player.command(name="autoupdate", description="Add Autoupdate for a Player.")
     @discord.commands.option("player", description="Choose a player or add a missing one with a tag", autocomplete=search_player)
-    async def player_search(self,
-                            ctx: discord.ApplicationContext,
-                            player: str,
-                            channel: discord.TextChannel):
+    async def player_autoupdate(self,
+                                ctx: discord.ApplicationContext,
+                                player: str,
+                                channel: discord.TextChannel):
         await ctx.defer()
         await self.bot.try_create_user(ctx.user.id)
 
@@ -63,30 +63,35 @@ class Player(commands.Cog):
 
         try:
             # check if player exists
-            await self.bot.coc_client.get_player(player_tag)
+            player = await self.bot.coc_client.get_player(player_tag)
         except coc.NotFound:
             await ctx.respond(f'A player with {player_tag} doesnt exist.')
             return
 
+        success = await self.try_add_autoupdate(player_tag, channel, ctx.user.id)
+
+        await ctx.respond(f"Successfully added Autoupdate for `{player.name}` in {channel.mention}."
+                          if success else
+                          f"Failed to add Autoupdate for `{player.name}` in {channel.mention}.")
+
+    async def try_add_autoupdate(self, player_tag: str, channel: discord.TextChannel, discord_user_id: str) -> bool:
         await self.bot.try_create_player(player_tag)
         player = await self.bot.player_db.find_one({"tag": player_tag})
 
         try:
             message = await channel.send(embed=PlayerOverviewEmbed(player))
         except:
-            await ctx.respond(f"Failed to add Autoupdate for `{player['name']}` in {channel.mention}.")
+            return False
 
         document = {
-            "discord_user_id": ctx.user.id,
+            "discord_user_id": discord_user_id,
             "channel_id": channel.id,
             "message_id": message.id
         }
 
         result = await self.bot.player_db.update_one({"tag": player_tag}, {
             "$addToSet": {f"autoupdate": document}})
-        await ctx.respond(f"Successfully added Autoupdate for `{player['name']}` in {channel.mention}."
-                          if result.modified_count > 0 else
-                          f"Failed to add Autoupdate for `{player['name']}` in {channel.mention}.")
+        return result.modified_count > 0
 
 
 def setup(bot):

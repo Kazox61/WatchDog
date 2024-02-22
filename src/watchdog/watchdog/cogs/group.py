@@ -68,22 +68,11 @@ class Group(commands.Cog):
         await ctx.defer()
         await self.bot.try_create_user(ctx.user.id)
 
-        public = visibility == "Public"
-        result = await self.bot.group_db.find_one({
-            "name": name
-        })
-        if result is None:
-            await self.bot.group_db.insert_one({
-                "owner_id": ctx.user.id,
-                "name": name,
-                "public": public,
-                "search_count": 0,
-                "members": [ctx.user.id],
-                "players": []
-            })
-            await ctx.respond(f"Successfully created group `{name}`. You can add now members to `{name}`.")
-        else:
-            await ctx.respond(f"You have already a group named `{name}`. Try it again with a different name.")
+        group_id = await self.try_create_group(name, visibility, ctx.user.id)
+
+        await ctx.respond(f"Successfully created group `{name}`. You can add now members to `{name}`."
+                          if group_id is not None else
+                          f"There is already a group named `{name}`. Try it again with a different name.")
 
     @group.command(name="delete", description="Delete a group permanently if you are owner of the group.")
     @discord.commands.option("group", description="Choose your group", autocomplete=search_group_user)
@@ -313,14 +302,11 @@ class Group(commands.Cog):
             await ctx.respond("Failed to add Autoupdate for the Group.")
             return
 
-        message = await channel.send("Loading...")
-
-        result = await self.bot.group_db.update_one({"_id": ObjectId(selected_group["id"]), "autoupdate": {"$not": {"$elemMatch": {"channel_id":  channel.id}}}},
-                                                    {"$addToSet": {"autoupdate": {"channel_id": channel.id, "message_id": message.id}}})
+        success = await self.try_add_autoupdate(selected_group["id"], channel)
 
         await ctx.respond(
             f"Successfully added Autoupdate for `{selected_group['name']}` to {channel.mention}."
-            if result.modified_count > 0 else
+            if success else
             f"Failed to add Autoupdate for `{selected_group['name']}` to `{channel.mention}`")
 
     @group_copy.command(name="leaderboard", description="Copy players from the leaderboard to your group.")
@@ -519,7 +505,24 @@ class Group(commands.Cog):
         paginator = PaginatorResponse(embeds)
         await paginator.send(ctx)
 
-    async def try_add_player_to_group(self, group_id, player_tag) -> bool:
+    async def try_create_group(self, group_name: str, visibility: str, discord_user_id: int) -> str | None:
+        public = visibility == "Public"
+        result = await self.bot.group_db.find_one({
+            "name": group_name
+        })
+        if result is not None:
+            return None
+        result = await self.bot.group_db.insert_one({
+            "owner_id": discord_user_id,
+            "name": group_name,
+            "public": public,
+            "search_count": 0,
+            "members": [discord_user_id],
+            "players": []
+        })
+        return str(result.inserted_id)
+
+    async def try_add_player_to_group(self, group_id: str, player_tag: str) -> bool:
         try:
             player = await self.bot.coc_client.get_player(player_tag)
             count = await self.bot.player_db.count_documents({'tag': player_tag})
@@ -537,6 +540,13 @@ class Group(commands.Cog):
             return False
         except coc.Maintenance:
             return False
+
+    async def try_add_autoupdate(self, group_id: str, channel: discord.TextChannel) -> bool:
+        message = await channel.send("Loading...")
+
+        result = await self.bot.group_db.update_one({"_id": ObjectId(group_id), "autoupdate": {"$not": {"$elemMatch": {"channel_id":  channel.id}}}},
+                                                    {"$addToSet": {"autoupdate": {"channel_id": channel.id, "message_id": message.id}}})
+        return result.modified_count > 0
 
 
 def setup(bot):

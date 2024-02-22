@@ -28,4 +28,5 @@ class Config:
         "watchdog.cogs.player",
         "watchdog.cogs.leaderboard",
         "watchdog.cogs.group",
+        "watchdog.cogs.setup"
     ]

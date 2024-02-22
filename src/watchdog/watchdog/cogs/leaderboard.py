@@ -57,34 +57,10 @@ class Leaderboard(commands.Cog):
         location_id = locations[location]
         location_name = location
 
-        try:
-            result = await self.bot.leaderboard_db.find_one({'name': location})
+        success = await self.autoudate_leaderboard_daystart(location_name, location_id, channel, ctx.user.id)
 
-            players: list[dict] = []
-            for player in result['day-start']:
-                players.append(player)
-            players.sort(key=lambda x: x['rank'])
-
-            embed = PlayerSimpleEmbed(
-                f"Autoupdate Leaderboard daystart {location_name}",
-                players[:50], 1)
-            embed.description += f'Last updated: <t:{str(datetime.now().timestamp()).split(".")[0]}:R>'
-
-            message = await channel.send(embed=embed)
-
-        except:
-            await ctx.respond(f"Failed to add Autoupdate for `{location_name}` in {channel.mention}.")
-
-        document = {
-            "discord_user_id": ctx.user.id,
-            "channel_id": channel.id,
-            "message_id": message.id
-        }
-
-        result = await self.bot.leaderboard_db.update_one({"location_id": location_id}, {
-            "$addToSet": {f"autoupdate.leaderboard_daystart": document}})
         await ctx.respond(f"Successfully added Autoupdate for `{location_name}` in {channel.mention}."
-                          if result.modified_count > 0 else
+                          if success else
                           f"Failed to add Autoupdate for `{location_name}` in {channel.mention}.")
 
     @leaderboard_current.command(name="check", description="Get a overview of the players from a current leaderboard ranking.")
@@ -144,21 +120,10 @@ class Leaderboard(commands.Cog):
         location_id = locations[location]
         location_name = location
 
-        try:
-            message = await channel.send("Loading...")
-        except:
-            await ctx.respond(f"Failed to add Autoupdate for `{location_name}` in {channel.mention}.")
+        success = await self.autoupdate_leaderboard_current(location_id, channel, ctx.user.id)
 
-        document = {
-            "discord_user_id": ctx.user.id,
-            "channel_id": channel.id,
-            "message_id": message.id
-        }
-
-        result = await self.bot.leaderboard_db.update_one({"location_id": location_id}, {
-            "$addToSet": {f"autoupdate.leaderboard_current": document}})
         await ctx.respond(f"Successfully added Autoupdate for `{location_name}` in {channel.mention}."
-                          if result.modified_count > 0 else
+                          if success else
                           f"Failed to add Autoupdate for `{location_name}` in {channel.mention}.")
 
     @leaderboard.command(name="stats", description="Get the individual stats for a current leaderboard ranking.")
@@ -186,6 +151,51 @@ class Leaderboard(commands.Cog):
 
         paginator = PaginatorResponse(embeds)
         await paginator.send(ctx)
+
+    async def autoudate_leaderboard_daystart(self, location_name: str, location_id: str, channel: discord.TextChannel, discord_user_id: int) -> bool:
+        try:
+            result = await self.bot.leaderboard_db.find_one({'location_id': location_id})
+
+            players: list[dict] = []
+            for player in result['day-start']:
+                players.append(player)
+            players.sort(key=lambda x: x['rank'])
+
+            embed = PlayerSimpleEmbed(
+                f"Autoupdate Leaderboard daystart {location_name}",
+                players[:50], 1)
+            embed.description += f'Last updated: <t:{str(datetime.now().timestamp()).split(".")[0]}:R>'
+
+            message = await channel.send(embed=embed)
+
+        except:
+            return False
+
+        document = {
+            "discord_user_id": discord_user_id,
+            "channel_id": channel.id,
+            "message_id": message.id
+        }
+
+        result = await self.bot.leaderboard_db.update_one({"location_id": location_id}, {
+            "$addToSet": {f"autoupdate.leaderboard_daystart": document}})
+        return result.modified_count > 0
+
+    async def autoupdate_leaderboard_current(self, location_id: str, channel: discord.TextChannel, discord_user_id: int) -> bool:
+        try:
+            message = await channel.send("Loading...")
+        except:
+            return False
+
+        document = {
+            "discord_user_id": discord_user_id,
+            "channel_id": channel.id,
+            "message_id": message.id
+        }
+
+        result = await self.bot.leaderboard_db.update_one({"location_id": location_id}, {
+            "$addToSet": {f"autoupdate.leaderboard_current": document}})
+        return result.modified_count > 0
 
 
 def setup(bot):

@@ -31,7 +31,8 @@ class DiscordEvents(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
         msg = "Thanks for inviting LegendWatchDog to your server. This bot is all about the Legend League. " \
-              "I suggest you to look into the `info` and `commands` commands learn more about all existing commands."
+              "I suggest you to look into the `info` and `commands` commands learn more about all existing commands."\
+              "The best way to setup everything for your Clan is the `setup clan` command."
 
         channel = self.bot.get_channel(self.bot.config.server_join_channel_id)
         await channel.send(f"Just joined `{guild.name}`, {guild.member_count} members")

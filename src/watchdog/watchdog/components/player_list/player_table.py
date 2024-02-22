@@ -46,10 +46,16 @@ def create_embeds(title: str, players: list[dict]):
 class PlayerTablePaginatorResponse(PaginatorResponse):
     def __init__(self, title, players: list[dict]):
         embeds = create_embeds(title, players)
+        if embeds == []:
+            embeds.append(discord.Embed(color=discord.Color(
+                16711680), title="**__No players!__**"))
         super().__init__(embeds)
 
 
 class PlayerTablePaginatorInteraction(PaginatorInteraction):
     def __init__(self, title, players: list[dict]):
         embeds = create_embeds(title, players)
+        if embeds == []:
+            embeds.append(discord.Embed(color=discord.Color(
+                16711680), title="**__No players!__**"))
         super().__init__(embeds)

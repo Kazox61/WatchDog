@@ -96,16 +96,16 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
     not_changed = diff_trophies == 0 and diff_defense_wins == 0 and diff_attack_wins == 0
     league = new_response.get("league", {}).get("name", "Unranked")
 
-    if new_response["name"] != previous_response["name"]:
-        bulk_changes.append(UpdateOne({"tag": tag},
-                                      {"$set": {"name": new_response["name"]}}))
+    bulk_changes.append(UpdateOne({"tag": tag},
+                                  {"$set": {"name": new_response["name"]}}))
+
+    bulk_changes.append(UpdateOne({'tag': tag},
+                                  {'$set': {'trophies': new_response["trophies"]}}))
 
     if not_changed:
         return
 
-    if new_response["trophies"] < 4900 and league != "Legend League":
-        bulk_changes.append(UpdateOne({'tag': tag},
-                                      {'$set': {'trophies': new_response["trophies"]}}))
+    if league != "Legend League":
         return
 
     got_zero_star_defense = diff_trophies == 0 and diff_defense_wins > 0
@@ -132,10 +132,6 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
     if sync_hits:
         bulk_changes.append(UpdateOne({'tag': tag},
                                       {'$push': {f'battle_log.{current_date}.defenses': diff_trophies}}))
-
-    if diff_trophies != 0:
-        bulk_changes.append(UpdateOne({'tag': tag},
-                                      {'$set': {'trophies': new_response["trophies"]}}))
 
     if diff_attack_wins > 0:
         bulk_changes.append(UpdateOne({'tag': tag},

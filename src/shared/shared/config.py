@@ -11,6 +11,7 @@ class Config:
     mongodb = f'mongodb://{getenv("MONGO_INITDB_ROOT_USERNAME")}:{getenv("MONGO_INITDB_ROOT_PASSWORD")}@{server_ip}:{getenv("MONGO_PORT")}/WatchDog?authSource={getenv("MONGO_INITDB_ROOT_USERNAME")}'
 
     redis_port = getenv("REDIS_PORT")
+    redis_password = getenv("REDIS_PASSWORD")
 
     coc_api_mail = getenv("COC_API_MAIL")
     coc_api_password = getenv("COC_API_PASSWORD")
@@ -18,6 +19,8 @@ class Config:
     discord_token = getenv("DISCORD_TOKEN")
     server_join_channel_id = int(getenv("SERVER_JOIN_CHANNEL_ID"))
     introduction_channel_id = int(getenv("INTRODUCTION_CHANNEL_ID"))
+    webhook_tracking_loop = getenv("WEBHOOK_TRACKING_LOOP")
+    webhook_debug_log = getenv("WEBHOOK_DEBUG_LOG")
 
     extensions = [
         "watchdog.cogs.discord_events",

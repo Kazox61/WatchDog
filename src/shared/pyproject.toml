@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.9"
 python-dotenv = "^1.0.1"
 coc-py = "^3.2.1"
+py-cord = "^2.4.1"
 
 
 [build-system]

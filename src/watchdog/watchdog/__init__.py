@@ -1,3 +1,7 @@
 from shared import setup_logger
+import logging
 
-logger = setup_logger("WatchDogBot")
+from shared.config import Config
+
+logger = setup_logger("watchdog", "watchdog.log",
+                      Config().webhook_debug_log, logging.DEBUG)

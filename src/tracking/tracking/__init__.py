@@ -1,3 +1,7 @@
 from shared import setup_logger
+import logging
 
-logger = setup_logger("Tracking")
+from shared.config import Config
+
+logger = setup_logger("tracking", "tracking.log",
+                      Config().webhook_debug_log, logging.DEBUG)

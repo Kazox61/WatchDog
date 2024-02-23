@@ -13,17 +13,19 @@ from uvicorn import Server
 import motor.motor_asyncio
 from pymongo import UpdateOne
 import zlib
+import time
+import discord
 
 from shared.config import Config
 from shared.coc_utils import create_keys, get_current_insertion_date
-
+from tracking import logger
 
 RATE_LIMIT = 30
 
 
 config = Config()
 
-cache = redis.Redis(host=config.server_ip, port=config.redis_port, db=1,
+cache = redis.Redis(host=config.server_ip, port=config.redis_port, password=config.redis_password, db=1,
                     decode_responses=False, max_connections=5000)
 
 mongo_client = motor.motor_asyncio.AsyncIOMotorClient(config.mongodb)
@@ -42,9 +44,7 @@ async def send_ws(ws, json):
 
 async def get_player_responses(keys: deque, tags: list[str]) -> list[bytes]:
     tasks = []
-    connector = aiohttp.TCPConnector(limit=2000, ttl_dns_cache=300)
-    timeout = aiohttp.ClientTimeout(total=1800)
-    async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+    async with aiohttp.ClientSession() as session:
         for tag in tags:
             keys.rotate(1)
 
@@ -75,7 +75,7 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
 
     tag = obj.tag
 
-    await cache.set(tag, compressed_new_response, ex=300)
+    await cache.set(tag, compressed_new_response, ex=600)
 
     if previous_compressed_response is None:
         return None
@@ -149,12 +149,16 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
 
 
 async def main(keys: deque, clients: list):
+    webhook = discord.Webhook.from_url(
+        config.webhook_tracking_loop, session=aiohttp.ClientSession())
+
     player_collection = mongo_client.WatchDog.players
     await cache.flushdb()
 
     loop_throttler = Throttler(rate_limit=1, period=30)
     while True:
         async with loop_throttler:
+            start_iteration = time.perf_counter()
             tags = await player_collection.distinct("tag")
             max_tag_split = len(keys) * RATE_LIMIT
             split_tags = [tags[i:i + max_tag_split]
@@ -163,20 +167,22 @@ async def main(keys: deque, clients: list):
             bulk_changes = []
             ws_tasks = []
 
-            key_throttler = Throttler(rate_limit=1, period=1)
             for tag_group in split_tags:
-                async with key_throttler:
-                    responses = await get_player_responses(keys=keys, tags=tag_group)
-                    cache_results = await cache.mget(keys=tag_group)
-                    response_tasks = [update_player(new_response=response, previous_compressed_response=cache_results[count], bulk_changes=bulk_changes, ws_tasks=ws_tasks, clients=clients)
-                                      for count, response in enumerate(responses) if isinstance(response, bytes)]
-                    await asyncio.gather(*response_tasks)
+                responses = await get_player_responses(keys=keys, tags=tag_group)
+                cache_results = await cache.mget(keys=tag_group)
+                response_tasks = [update_player(new_response=response, previous_compressed_response=cache_results[count], bulk_changes=bulk_changes, ws_tasks=ws_tasks, clients=clients)
+                                  for count, response in enumerate(responses) if isinstance(response, bytes)]
+                await asyncio.gather(*response_tasks)
+                await asyncio.sleep(2)
 
             if bulk_changes != []:
                 results = await player_collection.bulk_write(bulk_changes)
 
             if ws_tasks != []:
                 await asyncio.gather(*ws_tasks)
+            logger.debug(
+                f"Loop with {len(tags)} Tags took {(time.perf_counter() - start_iteration):.2f} seconds")
+            await webhook.send(f"Loop with `{len(tags)}` Tags took `{(time.perf_counter() - start_iteration):.2f}` seconds")
 
 
 if __name__ == "__main__":

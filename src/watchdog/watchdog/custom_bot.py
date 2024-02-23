@@ -45,7 +45,7 @@ class CustomBot(commands.Bot, ABC):
             config.coc_api_password
         ))
 
-        self.redis = redis.Redis(host=self.config.server_ip, port=self.config.redis_port,
+        self.redis = redis.Redis(host=self.config.server_ip, port=self.config.redis_port, password=self.config.redis_password,
                                  retry_on_timeout=True, retry_on_error=[redis.ConnectionError])
 
         self.emoji = Emojis()

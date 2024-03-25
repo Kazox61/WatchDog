@@ -34,5 +34,11 @@ services:
     build:
       dockerfile: scheduler.Dockerfile
 
+  api:
+    build:
+      dockerfile: api.Dockerfile
+    ports:
+      - 9089:9089
+
 volumes:
   watchdog:

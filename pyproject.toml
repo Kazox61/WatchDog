@@ -10,6 +10,8 @@ python = "^3.9"
 shared = { path = "src/shared/", develop = true }
 discord = { path = "src/discord/", develop = true }
 scheduler = { path = "src/scheduler/", develop = true }
+tracking = { path = "src/tracking/", develop = true }
+api = { path = "src/api/", develop = true }
 
 
 [build-system]

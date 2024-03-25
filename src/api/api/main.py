@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 
-from .routers import user, player
+from api.routers import user, player
 
 
 middleware = [

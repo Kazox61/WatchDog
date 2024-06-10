@@ -18,7 +18,7 @@ class Liveticker(commands.Cog):
         self.player_event_emitter.on(
             "diffTrophies", self.on_player_trophies_changed)
         self.updated_players = {}
-        self.update_loop.start()
+        # self.update_loop.start()
 
     async def on_player_trophies_changed(self, event):
         self.updated_players[event["tag"]] = event["diffTrophies"]

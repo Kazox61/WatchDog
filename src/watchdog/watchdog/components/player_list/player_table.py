@@ -11,14 +11,15 @@ class PlayerTableEmbed(discord.Embed):
         rows = []
         for i, player in enumerate(players, start_index):
             if "battle_log" in player and date in player['battle_log']:
-                battle_log = player['battle_log'][date]
-
-                sum_attacks = sum(battle_log['attacks'])
-                sum_defenses = sum(battle_log['defenses'])
+                battle_log: dict = player['battle_log'][date]
+                attacks = battle_log.get("attacks", [])
+                defenses = battle_log.get("defenses", [])
+                sum_attacks = sum(attacks)
+                sum_defenses = sum(defenses)
                 attack = str(sum_attacks) + \
-                    SUPER_SCRIPTS[len(battle_log['attacks'])]
+                    SUPER_SCRIPTS[len(attacks)]
                 defense = str(sum_defenses) + \
-                    SUPER_SCRIPTS[len(battle_log['defenses'])]
+                    SUPER_SCRIPTS[len(defenses)]
 
                 rows.append(
                     f"{str(i).rjust(3)}{str(player['trophies']).rjust(5)}{attack.rjust(5)}{defense.rjust(6)} {player['name']}")

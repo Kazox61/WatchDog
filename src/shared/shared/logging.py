@@ -33,7 +33,10 @@ class EmbedWebhookLogger:
         while self._to_log:
             embeds = [self._to_log.pop(0)
                       for _ in range(min(10, len(self._to_log)))]
-            await self._webhook.send(embeds=embeds)
+            try:
+                await self._webhook.send(embeds=embeds)
+            except discord.errors.HTTPException:
+                pass
 
 
 def codeblock(text, *, language: str = "") -> str:

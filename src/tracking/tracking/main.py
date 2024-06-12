@@ -79,7 +79,7 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
     await cache.set(tag, compressed_new_response, ex=600)
 
     if previous_compressed_response is None:
-        return None
+        return
 
     current_date = get_current_insertion_date()
 
@@ -97,11 +97,13 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
     not_changed = diff_trophies == 0 and diff_defense_wins == 0 and diff_attack_wins == 0
     league = new_response.get("league", {}).get("name", "Unranked")
 
-    bulk_changes.append(UpdateOne({"tag": tag},
-                                  {"$set": {"name": new_response["name"]}}))
+    if new_response["trophies"] != previous_response["trophies"]:
+        bulk_changes.append(UpdateOne({'tag': tag},
+                                      {'$set': {'trophies': new_response["trophies"]}}))
 
-    bulk_changes.append(UpdateOne({'tag': tag},
-                                  {'$set': {'trophies': new_response["trophies"]}}))
+    if new_response["name"] != previous_response["name"]:
+        bulk_changes.append(UpdateOne({"tag": tag},
+                                      {"$set": {"name": new_response["name"]}}))
 
     if not_changed:
         return
@@ -178,7 +180,7 @@ async def main(keys: deque, clients: list):
                     await asyncio.sleep(2)
 
                 if bulk_changes != []:
-                    results = await player_collection.bulk_write(bulk_changes)
+                    results = await player_collection.bulk_write(bulk_changes, ordered=False)
 
                 if ws_tasks != []:
                     await asyncio.gather(*ws_tasks)

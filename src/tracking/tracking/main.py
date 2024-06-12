@@ -15,6 +15,7 @@ from pymongo import UpdateOne
 import zlib
 import time
 import discord
+import traceback
 
 from shared.config import Config
 from shared.coc_utils import create_keys, get_current_insertion_date
@@ -158,34 +159,39 @@ async def main(keys: deque, clients: list):
     loop_throttler = Throttler(rate_limit=1, period=30)
     while True:
         async with loop_throttler:
-            start_iteration = time.perf_counter()
-            tags = await player_collection.distinct("tag")
-            max_tag_split = len(keys) * RATE_LIMIT
-            split_tags = [tags[i:i + max_tag_split]
-                          for i in range(0, len(tags), max_tag_split)]
-
-            bulk_changes = []
-            ws_tasks = []
-
-            for tag_group in split_tags:
-                responses = await get_player_responses(keys=keys, tags=tag_group)
-                cache_results = await cache.mget(keys=tag_group)
-                response_tasks = [update_player(new_response=response, previous_compressed_response=cache_results[count], bulk_changes=bulk_changes, ws_tasks=ws_tasks, clients=clients)
-                                  for count, response in enumerate(responses) if isinstance(response, bytes)]
-                await asyncio.gather(*response_tasks)
-                await asyncio.sleep(2)
-
-            if bulk_changes != []:
-                results = await player_collection.bulk_write(bulk_changes)
-
-            if ws_tasks != []:
-                await asyncio.gather(*ws_tasks)
-            logger.debug(
-                f"Loop with {len(tags)} Tags took {(time.perf_counter() - start_iteration):.2f} seconds")
             try:
-                await webhook.send(f"Loop with `{len(tags)}` Tags took `{(time.perf_counter() - start_iteration):.2f}` seconds")
-            except:
-                pass
+                start_iteration = time.perf_counter()
+                tags = await player_collection.distinct("tag")
+                max_tag_split = len(keys) * RATE_LIMIT
+                split_tags = [tags[i:i + max_tag_split]
+                              for i in range(0, len(tags), max_tag_split)]
+
+                bulk_changes = []
+                ws_tasks = []
+
+                for tag_group in split_tags:
+                    responses = await get_player_responses(keys=keys, tags=tag_group)
+                    cache_results = await cache.mget(keys=tag_group)
+                    response_tasks = [update_player(new_response=response, previous_compressed_response=cache_results[count], bulk_changes=bulk_changes, ws_tasks=ws_tasks, clients=clients)
+                                      for count, response in enumerate(responses) if isinstance(response, bytes)]
+                    await asyncio.gather(*response_tasks)
+                    await asyncio.sleep(2)
+
+                if bulk_changes != []:
+                    results = await player_collection.bulk_write(bulk_changes)
+
+                if ws_tasks != []:
+                    await asyncio.gather(*ws_tasks)
+                logger.debug(
+                    f"Loop with {len(tags)} Tags took {(time.perf_counter() - start_iteration):.2f} seconds")
+                try:
+                    await webhook.send(f"Loop with `{len(tags)}` Tags took `{(time.perf_counter() - start_iteration):.2f}` seconds")
+                except Exception as error:
+                    logger.error(error)
+            except Exception as error:
+                exc = ''.join(traceback.format_exception(type(error),
+                                                         error, error.__traceback__, chain=True))
+                logger.error(exc)
 
 
 if __name__ == "__main__":

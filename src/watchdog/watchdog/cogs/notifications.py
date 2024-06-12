@@ -11,8 +11,7 @@ class Notifications(commands.Cog):
     def __init__(self, bot: CustomBot) -> None:
         self.bot = bot
         self.player_event_emitter = player_event_emitter
-        self.player_event_emitter.on(
-            "diffTrophies", self.on_player_trophies_changed)
+        # self.player_event_emitter.on("diffTrophies", self.on_player_trophies_changed)
 
     async def on_player_trophies_changed(self, event):
         tag = event["tag"]

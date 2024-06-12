@@ -182,7 +182,10 @@ async def main(keys: deque, clients: list):
                 await asyncio.gather(*ws_tasks)
             logger.debug(
                 f"Loop with {len(tags)} Tags took {(time.perf_counter() - start_iteration):.2f} seconds")
-            await webhook.send(f"Loop with `{len(tags)}` Tags took `{(time.perf_counter() - start_iteration):.2f}` seconds")
+            try:
+                await webhook.send(f"Loop with `{len(tags)}` Tags took `{(time.perf_counter() - start_iteration):.2f}` seconds")
+            except:
+                pass
 
 
 if __name__ == "__main__":

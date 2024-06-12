@@ -188,8 +188,8 @@ async def main(keys: deque, clients: list):
                     f"Loop with {len(tags)} Tags took {(time.perf_counter() - start_iteration):.2f} seconds")
                 try:
                     await webhook.send(f"Loop with `{len(tags)}` Tags took `{(time.perf_counter() - start_iteration):.2f}` seconds")
-                except Exception as error:
-                    logger.error(error)
+                except discord.errors.HTTPException:
+                    pass
             except Exception as error:
                 exc = ''.join(traceback.format_exception(type(error),
                                                          error, error.__traceback__, chain=True))

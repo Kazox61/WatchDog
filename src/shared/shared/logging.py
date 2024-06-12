@@ -62,14 +62,18 @@ class WebhookHandler(logging.Handler):
         message = f'{record.message}\n{record.exc_text or ""}'
         message = message[:4000] + "..." if len(message) > 4000 else message
 
-        self._webhook_logger.log(
-            discord.Embed(
-                colour=self._colours.get(record.levelno, discord.Embed.Empty),
-                title=record.name,
-                description=codeblock(message, language="py"),
-                timestamp=datetime.datetime.fromtimestamp(record.created),
-            ).add_field(name=ZWSP, value=f"{record.filename}:{record.lineno}")
-        )
+        try:
+            self._webhook_logger.log(
+                discord.Embed(
+                    colour=self._colours.get(
+                        record.levelno, discord.Embed.Empty),
+                    title=record.name,
+                    description=codeblock(message, language="py"),
+                    timestamp=datetime.datetime.fromtimestamp(record.created),
+                ).add_field(name=ZWSP, value=f"{record.filename}:{record.lineno}")
+            )
+        except Exception:
+            pass
 
 
 def setup_logger(name: str, log_file: str, webhook_url: str, level: int):

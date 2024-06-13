@@ -47,8 +47,8 @@ class AutoUpdate(commands.Cog):
                         await self.bot.http.edit_message(
                             str(channel_id), str(message_id), content="", embeds=[embed.to_dict()])
                     except (discord.NotFound, discord.errors.Forbidden, RuntimeError):
-                        await self.bot.group_db.update_one(
-                            {"_id": ObjectId(group["_id"])},
+                        await self.bot.group_db.update_many(
+                            {},
                             {"$pull": {
                                 "autoupdate": {
                                     "channel_id": channel_id,
@@ -102,8 +102,8 @@ class AutoUpdate(commands.Cog):
                         await self.bot.http.edit_message(
                             str(channel_id), str(message_id), content="", embeds=[embed.to_dict()])
                     except (discord.NotFound, discord.errors.Forbidden, RuntimeError):
-                        await self.bot.leaderboard_db.update_one(
-                            {"location_id": location_id},
+                        await self.bot.leaderboard_db.update_many(
+                            {},
                             {"$pull": {
                                 "autoupdate.leaderboard_current": {
                                     "channel_id": channel_id,
@@ -121,7 +121,6 @@ class AutoUpdate(commands.Cog):
     async def update_leaderboard_daystart(self):
         update_tasks = []
         async for leaderboard in self.bot.leaderboard_db.find({"autoupdate.leaderboard_daystart": {"$exists": True}}):
-            location_id = leaderboard["location_id"]
             location_name = leaderboard["name"]
 
             players: list[dict] = []
@@ -142,8 +141,8 @@ class AutoUpdate(commands.Cog):
                         await self.bot.http.edit_message(
                             str(channel_id), str(message_id), content="", embeds=[embed.to_dict()])
                     except (discord.NotFound, discord.errors.Forbidden, RuntimeError):
-                        await self.bot.leaderboard_db.update_one(
-                            {"location_id": location_id},
+                        await self.bot.leaderboard_db.update_many(
+                            {},
                             {"$pull": {
                                 "autoupdate.leaderboard_daystart": {
                                     "channel_id": channel_id,
@@ -176,7 +175,7 @@ class AutoUpdate(commands.Cog):
                         str(channel_id), str(message_id), content="", embeds=[embed.to_dict()])
                 except (discord.NotFound, discord.errors.Forbidden, RuntimeError):
                     await self.bot.player_db.update_one(
-                        {"tag": player_tag},
+                        {},
                         {"$pull": {
                             "autoupdate": {
                                 "channel_id": channel_id,

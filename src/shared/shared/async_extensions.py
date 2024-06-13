@@ -7,6 +7,8 @@ def split_even(l: list, n: int) -> list[list]:
 
 
 async def run_tasks(tasks: list, batches=1, delay=1.0, delay_on_last=True):
+    if len(tasks) <= 0:
+        return
     split_tasks = split_even(tasks, batches)
     for i, split_task in enumerate(split_tasks):
         await asyncio.gather(*split_task)

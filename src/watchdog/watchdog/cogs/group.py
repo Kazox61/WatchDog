@@ -307,7 +307,7 @@ class Group(commands.Cog):
         await ctx.respond(
             f"Successfully added Autoupdate for `{selected_group['name']}` to {channel.mention}."
             if success else
-            f"Failed to add Autoupdate for `{selected_group['name']}` to `{channel.mention}`")
+            f"Failed to add Autoupdate for `{selected_group['name']}` to {channel.mention}.")
 
     @group_copy.command(name="leaderboard", description="Copy players from the leaderboard to your group.")
     @discord.commands.option("group", description="Choose your group", autocomplete=search_group_user)

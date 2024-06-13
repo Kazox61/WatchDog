@@ -1,12 +1,14 @@
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import asyncio
 from datetime import datetime
+from bson.objectid import ObjectId
 
 from watchdog.custom_bot import CustomBot
 from watchdog.cogs.group import sort_by_current_trophies
 from watchdog.components import PlayerTableEmbed, PlayerSimpleEmbed, PlayerOverviewEmbed
 from watchdog.background import player_event_emitter
+from watchdog import logger
 
 
 class AutoUpdate(commands.Cog):
@@ -42,10 +44,19 @@ class AutoUpdate(commands.Cog):
                     try:
                         await self.bot.http.edit_message(
                             str(channel_id), str(message_id), content="", embeds=[embed.to_dict()])
-                    except:
-                        pass
+                    except (discord.NotFound, discord.errors.Forbidden, RuntimeError):
+                        await self.bot.group_db.update_one(
+                            {"_id": ObjectId(group["_id"])},
+                            {"$pull": {
+                                "autoupdate": {
+                                    "channel_id": channel_id,
+                                    "message_id": message_id
+                                }
+                            }})
 
                 update_tasks.append(update_group_message(autoupdate, embed))
+
+        logger.debug(f"Autoupdate {len(update_tasks)} groups")
 
         await asyncio.gather(*update_tasks)
 
@@ -88,17 +99,27 @@ class AutoUpdate(commands.Cog):
                     try:
                         await self.bot.http.edit_message(
                             str(channel_id), str(message_id), content="", embeds=[embed.to_dict()])
-                    except:
-                        pass
+                    except (discord.NotFound, discord.errors.Forbidden, RuntimeError):
+                        await self.bot.leaderboard_db.update_one(
+                            {"location_id": location_id},
+                            {"$pull": {
+                                "autoupdate.leaderboard_current": {
+                                    "channel_id": channel_id,
+                                    "message_id": message_id
+                                }
+                            }})
 
                 update_tasks.append(
                     update_leaderboard_message(autoupdate, embed))
+
+        logger.debug(f"Autoupdate {len(update_tasks)} current leaderboards")
 
         await asyncio.gather(*update_tasks)
 
     async def update_leaderboard_daystart(self):
         update_tasks = []
         async for leaderboard in self.bot.leaderboard_db.find({"autoupdate.leaderboard_daystart": {"$exists": True}}):
+            location_id = leaderboard["location_id"]
             location_name = leaderboard["name"]
 
             players: list[dict] = []
@@ -118,11 +139,20 @@ class AutoUpdate(commands.Cog):
                     try:
                         await self.bot.http.edit_message(
                             str(channel_id), str(message_id), content="", embeds=[embed.to_dict()])
-                    except:
-                        pass
+                    except (discord.NotFound, discord.errors.Forbidden, RuntimeError):
+                        await self.bot.leaderboard_db.update_one(
+                            {"location_id": location_id},
+                            {"$pull": {
+                                "autoupdate.leaderboard_daystart": {
+                                    "channel_id": channel_id,
+                                    "message_id": message_id
+                                }
+                            }})
 
                 update_tasks.append(
                     update_leaderboard_message(autoupdate, embed))
+
+        logger.debug(f"Autoupdate {len(update_tasks)} daystart leaderboards")
 
         await asyncio.gather(*update_tasks)
 
@@ -142,8 +172,15 @@ class AutoUpdate(commands.Cog):
                 try:
                     await self.bot.http.edit_message(
                         str(channel_id), str(message_id), content="", embeds=[embed.to_dict()])
-                except:
-                    pass
+                except (discord.NotFound, discord.errors.Forbidden, RuntimeError):
+                    await self.bot.player_db.update_one(
+                        {"tag": player_tag},
+                        {"$pull": {
+                            "autoupdate": {
+                                "channel_id": channel_id,
+                                "message_id": message_id
+                            }
+                        }})
 
             update_tasks.append(
                 update_player_message(autoupdate, embed))

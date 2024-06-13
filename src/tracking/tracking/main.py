@@ -188,10 +188,10 @@ async def main(keys: deque, clients: list):
                 if ws_tasks != []:
                     await asyncio.gather(*ws_tasks)
 
-                debug_text = f"Loop with {len(tags)} tags and {len(bulk_changes)} changes took {(time.perf_counter() - start_iteration):.2f} seconds"
-                logger.debug(debug_text)
+                logger.debug(
+                    f"Loop with {len(tags)} tags and {len(bulk_changes)} changes took {(time.perf_counter() - start_iteration):.2f} seconds")
                 try:
-                    await webhook.send(debug_text)
+                    await webhook.send(f"Loop with `{len(tags)}` tags and `{len(bulk_changes)}` changes took `{(time.perf_counter() - start_iteration):.2f}` seconds")
                 except discord.errors.HTTPException:
                     pass
             except Exception as error:

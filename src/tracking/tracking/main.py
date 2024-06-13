@@ -28,7 +28,7 @@ RATE_LIMIT = 30
 config = Config()
 
 cache = redis.Redis(host=config.server_ip, port=config.redis_port, password=config.redis_password, db=1,
-                    decode_responses=False, max_connections=5000)
+                    decode_responses=False, max_connections=50)
 
 mongo_client = motor.motor_asyncio.AsyncIOMotorClient(config.mongodb)
 

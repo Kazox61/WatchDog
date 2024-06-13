@@ -7,6 +7,7 @@ import aiohttp
 import ujson
 from asyncio_throttle import Throttler
 from redis import asyncio as redis
+from redis.asyncio.client import Pipeline as RedisPipeline
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from uvicorn import Config as uvicorn_Config
 from uvicorn import Server
@@ -67,7 +68,7 @@ async def get_player_responses(keys: deque, tags: list[str]) -> list[bytes]:
     return results
 
 
-async def update_player(new_response: bytes, previous_compressed_response: bytes, bulk_changes: list, ws_tasks: list, clients: list):
+async def update_player(new_response: bytes, previous_compressed_response: bytes, bulk_changes: list, ws_tasks: list, clients: list, pipe: RedisPipeline):
     obj = decode(new_response, type=Player)
     compressed_new_response = zlib.compress(new_response)
 
@@ -76,7 +77,7 @@ async def update_player(new_response: bytes, previous_compressed_response: bytes
 
     tag = obj.tag
 
-    await cache.set(tag, compressed_new_response, ex=600)
+    await pipe.set(tag, compressed_new_response, ex=600)
 
     if previous_compressed_response is None:
         return
@@ -172,11 +173,13 @@ async def main(keys: deque, clients: list):
                 ws_tasks = []
 
                 for tag_group in split_tags:
+                    pipe = cache.pipeline()
                     responses = await get_player_responses(keys=keys, tags=tag_group)
                     cache_results = await cache.mget(keys=tag_group)
-                    response_tasks = [update_player(new_response=response, previous_compressed_response=cache_results[count], bulk_changes=bulk_changes, ws_tasks=ws_tasks, clients=clients)
+                    response_tasks = [update_player(new_response=response, previous_compressed_response=cache_results[count], bulk_changes=bulk_changes, ws_tasks=ws_tasks, clients=clients, pipe=pipe)
                                       for count, response in enumerate(responses) if isinstance(response, bytes)]
                     await asyncio.gather(*response_tasks)
+                    await pipe.execute()
                     await asyncio.sleep(2)
 
                 if bulk_changes != []:
@@ -184,10 +187,11 @@ async def main(keys: deque, clients: list):
 
                 if ws_tasks != []:
                     await asyncio.gather(*ws_tasks)
-                logger.debug(
-                    f"Loop with {len(tags)} Tags took {(time.perf_counter() - start_iteration):.2f} seconds")
+
+                debug_text = f"Loop with {len(tags)} tags and {len(bulk_changes)} changes took {(time.perf_counter() - start_iteration):.2f} seconds"
+                logger.debug(debug_text)
                 try:
-                    await webhook.send(f"Loop with `{len(tags)}` Tags took `{(time.perf_counter() - start_iteration):.2f}` seconds")
+                    await webhook.send(debug_text)
                 except discord.errors.HTTPException:
                     pass
             except Exception as error:

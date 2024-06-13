@@ -186,3 +186,7 @@ class CustomBot(commands.Bot, ABC):
                 players.append(response)
 
         return [player for player in players if player is not None]
+
+    def user_has_write_permission(self, member: discord.Member, channel: discord.TextChannel) -> bool:
+        permissions = channel.permissions_for(member)
+        return permissions.send_messages

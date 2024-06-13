@@ -68,7 +68,7 @@ class Player(commands.Cog):
             await ctx.respond(f'A player with {player_tag} doesnt exist.')
             return
 
-        success = await self.try_add_autoupdate(player_tag, channel, ctx.user.id)
+        success = self.bot.user_has_write_permission(ctx.user, channel) and await self.try_add_autoupdate(player_tag, channel, ctx.user.id)
 
         await ctx.respond(f"Successfully added Autoupdate for `{player.name}` in {channel.mention}."
                           if success else

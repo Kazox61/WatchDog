@@ -302,7 +302,7 @@ class Group(commands.Cog):
             await ctx.respond("Failed to add Autoupdate for the Group.")
             return
 
-        success = await self.try_add_autoupdate(selected_group["id"], channel)
+        success = self.bot.user_has_write_permission(ctx.user, channel) and await self.try_add_autoupdate(selected_group["id"], channel)
 
         await ctx.respond(
             f"Successfully added Autoupdate for `{selected_group['name']}` to {channel.mention}."

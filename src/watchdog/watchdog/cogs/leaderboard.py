@@ -57,7 +57,7 @@ class Leaderboard(commands.Cog):
         location_id = locations[location]
         location_name = location
 
-        success = await self.autoudate_leaderboard_daystart(location_name, location_id, channel, ctx.user.id)
+        success = self.bot.user_has_write_permission(ctx.user, channel) and await self.autoudate_leaderboard_daystart(location_name, location_id, channel, ctx.user.id)
 
         await ctx.respond(f"Successfully added Autoupdate for `{location_name}` in {channel.mention}."
                           if success else
@@ -120,7 +120,7 @@ class Leaderboard(commands.Cog):
         location_id = locations[location]
         location_name = location
 
-        success = await self.autoupdate_leaderboard_current(location_id, channel, ctx.user.id)
+        success = self.bot.user_has_write_permission(ctx.user, channel) and await self.autoupdate_leaderboard_current(location_id, channel, ctx.user.id)
 
         await ctx.respond(f"Successfully added Autoupdate for `{location_name}` in {channel.mention}."
                           if success else

@@ -3,12 +3,14 @@ from discord.ext import commands
 import asyncio
 from datetime import datetime
 from bson.objectid import ObjectId
+import math
 
 from watchdog.custom_bot import CustomBot
 from watchdog.cogs.group import sort_by_current_trophies
 from watchdog.components import PlayerTableEmbed, PlayerSimpleEmbed, PlayerOverviewEmbed
 from watchdog.background import player_event_emitter
 from watchdog import logger
+from shared.async_extensions import run_tasks
 
 
 class AutoUpdate(commands.Cog):
@@ -58,7 +60,7 @@ class AutoUpdate(commands.Cog):
 
         logger.debug(f"Autoupdate {len(update_tasks)} groups")
 
-        await asyncio.gather(*update_tasks)
+        await run_tasks(update_tasks, math.ceil(len(update_tasks) / 40))
 
     async def update_leaderboard_current(self):
         update_tasks = []
@@ -114,7 +116,7 @@ class AutoUpdate(commands.Cog):
 
         logger.debug(f"Autoupdate {len(update_tasks)} current leaderboards")
 
-        await asyncio.gather(*update_tasks)
+        await run_tasks(update_tasks, math.ceil(len(update_tasks) / 40))
 
     async def update_leaderboard_daystart(self):
         update_tasks = []
@@ -154,7 +156,7 @@ class AutoUpdate(commands.Cog):
 
         logger.debug(f"Autoupdate {len(update_tasks)} daystart leaderboards")
 
-        await asyncio.gather(*update_tasks)
+        await run_tasks(update_tasks, math.ceil(len(update_tasks) / 40))
 
     async def update_player(self, event):
         player_tag = event["tag"]
@@ -185,7 +187,7 @@ class AutoUpdate(commands.Cog):
             update_tasks.append(
                 update_player_message(autoupdate, embed))
 
-        await asyncio.gather(*update_tasks)
+        await run_tasks(update_tasks, math.ceil(len(update_tasks) / 40))
 
 
 def setup(bot):
